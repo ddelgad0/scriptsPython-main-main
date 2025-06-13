@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Estatísticas Standvirtual</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: white;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #3f51b5;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Estatísticas de Anúncios por Marca - Standvirtual</h1>
+
+  <table id="tabela-dados">
+    <thead>
+      <tr>
+        <th>Marca</th>
+        <th>Data</th>
+        <th>Total de Anúncios</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function carregarCSV() {
+      const response = await fetch('contagem_anuncios_acumulado_por_marca.csv');
+      const texto = await response.text();
+      const linhas = texto.trim().split('\n');
+      const tbody = document.querySelector('#tabela-dados tbody');
+      
+      linhas.slice(1).forEach(linha => {
+        const colunas = linha.split(',');
+        const tr = document.createElement('tr');
+        colunas.forEach(coluna => {
+          const td = document.createElement('td');
+          td.textContent = coluna;
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    carregarCSV();
+  </script>
+
+</body>
+</html>

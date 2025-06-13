@@ -68,4 +68,4 @@ driver.quit()
 os.makedirs("dados_semanais", exist_ok=True)
 ficheiro_saida = "dados_semanais/contagem_anuncios_acumulado_por_marca.csv"
 salvar_dados_acumulados(dados, ficheiro_saida)
-print(f"\n✅ Dados acumulados salvos em: {ficheiro_saida}")
+print(f"Dados acumulados salvos em: {ficheiro_saida}")
