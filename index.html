@@ -68,7 +68,7 @@
     let dadosPorMarca = {};
 
     async function carregarCSV() {
-      const response = await fetch('dados_semanais\contagem_anuncios_acumulado_por_marca.csv');
+      const response = await fetch('dados_semanais/contagem_anuncios_acumulado_por_marca.csv');
       const texto = await response.text();
       const linhas = texto.trim().split('\n');
 
