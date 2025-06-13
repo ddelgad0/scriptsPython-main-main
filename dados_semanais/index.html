@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Estatísticas Standvirtual</title>
   <style>
     body {
@@ -13,6 +13,7 @@
       border-collapse: collapse;
       width: 100%;
       background: white;
+      margin-bottom: 40px;
     }
     th, td {
       border: 1px solid #ccc;
@@ -29,41 +30,154 @@
     h1 {
       color: #333;
     }
+    h2 {
+      color: #2c387e;
+      margin-top: 40px;
+    }
+    #btnDownloadExcel {
+      background-color: #3f51b5;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    #btnDownloadExcel:hover {
+      background-color: #303f9f;
+    }
   </style>
 </head>
 <body>
 
   <h1>📊 Estatísticas de Anúncios por Marca - Standvirtual</h1>
 
-  <table id="tabela-dados">
-    <thead>
-      <tr>
-        <th>Marca</th>
-        <th>Data</th>
-        <th>Total de Anúncios</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <button id="btnDownloadExcel">📥 Baixar Excel com dados por marca</button>
+
+  <div id="tabelas-container"></div>
+
+  <h2>Gráfico de Anúncios por Marca</h2>
+  <canvas id="graficoAnuncios" width="800" height="400"></canvas>
+
+  <!-- Bibliotecas externas -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
   <script>
+    let dadosPorMarca = {};
+
     async function carregarCSV() {
       const response = await fetch('contagem_anuncios_acumulado_por_marca.csv');
       const texto = await response.text();
       const linhas = texto.trim().split('\n');
-      const tbody = document.querySelector('#tabela-dados tbody');
-      
+
+      dadosPorMarca = {}; // reset
       linhas.slice(1).forEach(linha => {
-        const colunas = linha.split(',');
-        const tr = document.createElement('tr');
-        colunas.forEach(coluna => {
-          const td = document.createElement('td');
-          td.textContent = coluna;
-          tr.appendChild(td);
+        const [marca, data, total] = linha.split(',');
+        if (!dadosPorMarca[marca]) dadosPorMarca[marca] = [];
+        dadosPorMarca[marca].push({ data, total: Number(total) });
+      });
+
+      mostrarTabelas();
+      desenharGrafico();
+    }
+
+    function mostrarTabelas() {
+      const container = document.getElementById('tabelas-container');
+      container.innerHTML = ''; // limpa
+
+      for (const marca in dadosPorMarca) {
+        const grupo = dadosPorMarca[marca];
+        // Cria título da marca
+        const h2 = document.createElement('h2');
+        h2.textContent = marca.toUpperCase();
+        container.appendChild(h2);
+
+        // Cria tabela
+        const tabela = document.createElement('table');
+        tabela.innerHTML = `
+          <thead>
+            <tr><th>Data</th><th>Total de Anúncios</th></tr>
+          </thead>
+          <tbody>
+            ${grupo.map(row => `<tr><td>${row.data}</td><td>${row.total}</td></tr>`).join('')}
+          </tbody>
+        `;
+        container.appendChild(tabela);
+      }
+    }
+
+    function desenharGrafico() {
+      // Datas únicas ordenadas
+      const todasDatasSet = new Set();
+      for (const marca in dadosPorMarca) {
+        dadosPorMarca[marca].forEach(item => todasDatasSet.add(item.data));
+      }
+      const todasDatas = Array.from(todasDatasSet).sort();
+
+      const dados = {
+        labels: todasDatas,
+        datasets: []
+      };
+
+      function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for(let i=0; i<6; i++) {
+          color += letters[Math.floor(Math.random()*16)];
+        }
+        return color;
+      }
+
+      for (const marca in dadosPorMarca) {
+        const mapaDataTotal = {};
+        dadosPorMarca[marca].forEach(item => { mapaDataTotal[item.data] = item.total; });
+        const valores = todasDatas.map(d => mapaDataTotal[d] || 0);
+        dados.datasets.push({
+          label: marca.toUpperCase(),
+          data: valores,
+          fill: false,
+          borderColor: getRandomColor(),
+          tension: 0.1
         });
-        tbody.appendChild(tr);
+      }
+
+      const ctx = document.getElementById('graficoAnuncios').getContext('2d');
+      if(window.myChart) window.myChart.destroy();
+      window.myChart = new Chart(ctx, {
+        type: 'line',
+        data: dados,
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Evolução do Número de Anúncios por Marca'
+            }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
       });
     }
+
+    document.getElementById('btnDownloadExcel').onclick = () => {
+      const wb = XLSX.utils.book_new();
+
+      for (const marca in dadosPorMarca) {
+        const dadosMarca = [["Data", "Total de Anúncios"]];
+        dadosPorMarca[marca].forEach(({data, total}) => {
+          dadosMarca.push([data, total]);
+        });
+        const ws = XLSX.utils.aoa_to_sheet(dadosMarca);
+        XLSX.utils.book_append_sheet(wb, ws, marca.substring(0, 31));
+      }
+
+      XLSX.writeFile(wb, 'Estatisticas_Standvirtual_por_marca.xlsx');
+    };
 
     carregarCSV();
   </script>
